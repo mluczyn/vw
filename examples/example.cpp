@@ -33,7 +33,7 @@ int main()
 	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eColorAttachmentRead;
 
 	vw::GraphicsPipelineSettings graphicsPipelineConfig;
-	graphicsPipelineConfig.addShaderStages({ vertexShader.getShaderStageInfo(), fragmentShader.getShaderStageInfo() });
+	graphicsPipelineConfig.addShaderStages({ vertexShader, fragmentShader});
 
 	vw::RenderPass renderPass(device, { swapchain.getImageFormat() }, { vk::ImageLayout::ePresentSrcKHR }, { subpass }, { dependency }, { graphicsPipelineConfig });
 

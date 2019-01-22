@@ -311,7 +311,7 @@ vw::CommandBuffer::CommandBuffer(vw::CommandBuffer && other) : vw::Semaphore(oth
 	requestQueue = other.requestQueue;
 	wSemaphores = other.wSemaphores;
 	wStages = other.wStages;
-	other.poolHandle = 0;
+	other.poolHandle = nullptr;
 }
 
 void vw::CommandBuffer::begin(vk::CommandBufferUsageFlags usageFlags)
@@ -385,7 +385,7 @@ vw::CommandBuffer & vw::CommandBuffer::operator=(vw::CommandBuffer && other)
 	requestQueue = other.requestQueue;
 	wSemaphores = other.wSemaphores;
 	wStages = other.wStages;
-	other.poolHandle = 0;
+	other.poolHandle = nullptr;
 	return *this;
 }
 

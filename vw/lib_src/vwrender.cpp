@@ -158,14 +158,18 @@ void vw::RenderPass::createPipelines(std::vector<vw::GraphicsPipelineSettings>& 
 	vw::PipelineLayout emptyLayout(deviceHandle, {}, {});
 
 	std::vector<vk::GraphicsPipelineCreateInfo> pipelineCreateInfos(subpassCount);
+	std::vector<std::vector<vk::PipelineShaderStageCreateInfo>> shaderStageInfos(subpassCount);
 
 	for (size_t i = 0; i < pipelineSettings.size(); ++i)
 	{
 		pipelineCreateInfos[i] = pipelineSettings[i];
 
 		pipelineCreateInfos[i].stageCount = pipelineSettings[i].shaderStages.size();
-		pipelineCreateInfos[i].pStages = pipelineSettings[i].shaderStages.data();
-
+		shaderStageInfos[i].resize(pipelineCreateInfos[i].stageCount);
+		for (size_t j = 0; j < pipelineSettings[i].shaderStages.size(); ++j)
+			shaderStageInfos[i][j] = pipelineSettings[i].shaderStages[j].get().getShaderStageInfo();
+		pipelineCreateInfos[i].pStages = shaderStageInfos[i].data();
+		
 		if (!pipelineSettings[i].pipelineCreateInfo.layout)
 			pipelineCreateInfos[i].layout = emptyLayout;
 	
@@ -282,7 +286,7 @@ vw::GraphicsPipelineSettings::operator vk::GraphicsPipelineCreateInfo()
 	return pipelineCreateInfo;
 }
 
-void vw::GraphicsPipelineSettings::addShaderStages(std::vector<vk::PipelineShaderStageCreateInfo> shaders)
+void vw::GraphicsPipelineSettings::addShaderStages(std::vector<std::reference_wrapper<vw::Shader>> shaders)
 {
 	shaderStages.insert(shaderStages.end(), shaders.begin(), shaders.end());
 	pipelineCreateInfo.stageCount = shaderStages.size();

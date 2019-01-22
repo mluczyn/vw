@@ -2,7 +2,7 @@
 #include<vulkan\vulkan.hpp>
 #include <map>
 #include <memory>
-#include "vwshader.hpp"
+#include "vwshader.h"
 
 namespace vw
 {
@@ -52,12 +52,12 @@ namespace vw
 		GraphicsPipelineSettings();
 		//Renderpass/subpass and shader module info is not filled in
 		operator vk::GraphicsPipelineCreateInfo();
-		void addShaderStages(std::vector<vk::PipelineShaderStageCreateInfo> shaders);
+		void addShaderStages(std::vector<std::reference_wrapper<vw::Shader>> shaders);
 		void setBlendModes(std::vector<vw::BlendMode> blendModes);
 		void setLayout(vk::PipelineLayout pipelineLayout);
 
 		vk::GraphicsPipelineCreateInfo pipelineCreateInfo;
-		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
+		std::vector<std::reference_wrapper<vw::Shader>> shaderStages;
 
 		vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
 

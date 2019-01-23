@@ -15,30 +15,31 @@ int main()
 	vw::Shader vertexShader(device, vk::ShaderStageFlagBits::eVertex, shaderPath + "vert.spv");
 	vw::Shader fragmentShader(device, vk::ShaderStageFlagBits::eFragment, shaderPath + "frag.spv");
 
+	vw::GraphicsPipelineSettings graphicsPipelineConfig;
+	graphicsPipelineConfig.addShaderStages({ vertexShader, fragmentShader });
+	graphicsPipelineConfig.setBlendModes({ vw::BlendMode::disabled });
+
 	vw::Swapchain swapchain(device, device.getPhysicalDevice(), window.getSurface());
 	auto swapImages = swapchain.getImages();
 	vk::Extent2D screenExtent = swapchain.getExtent();
 	vw::Semaphore nextImageAquired(device);
 
-	vw::SubpassDescription subpass;
-	subpass.colorAttachments = { 0 };
-	subpass.attachmentBlendModes = { vw::BlendMode::disabled };
-
-	vk::SubpassDependency dependency;
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass = 0;
+	vw::ExternalDependency dependency;
 	dependency.srcStageMask = vk::PipelineStageFlagBits::eTransfer;
 	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	dependency.srcAccessMask = vk::AccessFlagBits::eTransferRead;
 	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eColorAttachmentRead;
 
-	vw::GraphicsPipelineSettings graphicsPipelineConfig;
-	graphicsPipelineConfig.addShaderStages({ vertexShader, fragmentShader});
-
-	vw::RenderPass renderPass(device, { swapchain.getImageFormat() }, { vk::ImageLayout::ePresentSrcKHR }, { subpass }, { dependency }, { graphicsPipelineConfig });
+	vw::SubpassDescription subpass;
+	subpass.colorAttachments = { 0 };
+	subpass.attachmentBlendModes = { vw::BlendMode::disabled };
+	subpass.preDependencies = { dependency};
+	subpass.pipelineSettings = &graphicsPipelineConfig;
 
 	vw::Image<vk::ImageType::e2D, vw::ColorAttachment, vw::TransferSrc> image(device, screenExtent.width, screenExtent.height, vk::Format::eR8G8B8A8Unorm);
 	auto imageView = image.createView(vk::ImageAspectFlagBits::eColor);
+
+	vw::RenderPass renderPass(device, { image.getFormat() }, { vk::ImageLayout::eColorAttachmentOptimal }, { subpass });
 
 	vw::Framebuffer framebuffer(device, renderPass, screenExtent, { imageView });
  
@@ -71,16 +72,14 @@ int main()
 		transferCmdBuffers[i]->end();
 	}
 
-
-	while (!window.shouldClose())
+	window.untilClosed([&]()
 	{
-		glfwPollEvents();
 		uint32_t imageIndex = swapchain.getNextImageIndex(nextImageAquired);
 		renderCmdBuffer.submit();
 		transferCmdBuffers[imageIndex]->setWaitConditions({ renderCmdBuffer, nextImageAquired }, { vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer });
 		transferCmdBuffers[imageIndex]->submit();
 		swapchain.present(imageIndex, { *transferCmdBuffers[imageIndex] });
-	}
+	});
 	device.waitIdle();
 	return 0;
 }

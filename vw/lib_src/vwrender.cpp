@@ -1,11 +1,9 @@
 #include "vwrender.h"
 
-vw::RenderPass::RenderPass(vk::Device device, std::vector<vk::Format> attachmentFormats, std::vector<vk::ImageLayout> attachmentOutputLayouts, std::vector<vw::SubpassDescription> subpasses, std::vector<vk::SubpassDependency> externalDependencies, std::vector<vw::GraphicsPipelineSettings> pipelineSettings) : deviceHandle(device)
+vw::RenderPass::RenderPass(vk::Device device, std::vector<vk::Format> attachmentFormats, std::vector<vk::ImageLayout> attachmentOutputLayouts, std::vector<vw::SubpassDescription> subpasses) : deviceHandle(device)
 {
-	assert(attachmentFormats.size() == attachmentOutputLayouts.size());
 
 	subpassCount = subpasses.size();
-	assert(pipelineSettings.size() == subpassCount);
 
 	std::vector<vk::AttachmentDescription> attachmentDescriptions(attachmentFormats.size());
 	vk::AttachmentDescription attachmentDescBase;
@@ -91,6 +89,38 @@ vw::RenderPass::RenderPass(vk::Device device, std::vector<vk::Format> attachment
 		subpassDescriptions[i].pPreserveAttachments = preservedAttachments[i].data();
 	}
 
+	size_t externDependencyCount = 0;
+	for (auto& subpass : subpasses)
+		externDependencyCount += (subpass.preDependencies.size() + subpass.postDependencies.size());
+
+	std::vector<vk::SubpassDependency> subpassDependencies(externDependencyCount);
+	size_t dependencyIterator = 0;
+
+	//determine external dependencies
+	for (size_t i = 0; i < subpasses.size(); ++i)
+	{
+		for (auto& preDependency : subpasses[i].preDependencies)
+		{
+			subpassDependencies[dependencyIterator].srcSubpass = VK_SUBPASS_EXTERNAL;
+			subpassDependencies[dependencyIterator].dstSubpass = i;
+			subpassDependencies[dependencyIterator].srcStageMask = preDependency.srcStageMask;
+			subpassDependencies[dependencyIterator].dstStageMask = preDependency.dstStageMask;
+			subpassDependencies[dependencyIterator].srcAccessMask = preDependency.srcAccessMask;
+			subpassDependencies[dependencyIterator].dstAccessMask = preDependency.dstAccessMask;
+			subpassDependencies[dependencyIterator++].dependencyFlags = preDependency.flags;
+		}
+		for (auto& postDependency : subpasses[i].postDependencies)
+		{
+			subpassDependencies[dependencyIterator].srcSubpass = i;
+			subpassDependencies[dependencyIterator].dstSubpass = VK_SUBPASS_EXTERNAL;
+			subpassDependencies[dependencyIterator].srcStageMask = postDependency.srcStageMask;
+			subpassDependencies[dependencyIterator].dstStageMask = postDependency.dstStageMask;
+			subpassDependencies[dependencyIterator].srcAccessMask = postDependency.srcAccessMask;
+			subpassDependencies[dependencyIterator].dstAccessMask = postDependency.dstAccessMask;
+			subpassDependencies[dependencyIterator++].dependencyFlags = postDependency.flags;
+		}
+	}
+
 	//determine internal dependencies
 	for(uint32_t i = 0; i < attachmentFormats.size(); ++i)
 	{
@@ -114,7 +144,7 @@ vw::RenderPass::RenderPass(vk::Device device, std::vector<vk::Format> attachment
 						dependency.dstStageMask = mapAccessStage[currentAccessFlag];
 						dependency.srcAccessMask = lastAccessFlag;
 						dependency.dstAccessMask = currentAccessFlag;
-						externalDependencies.push_back(dependency);
+						subpassDependencies.push_back(dependency);
 					}
 
 				lastAccessFlag = currentAccessFlag;
@@ -128,13 +158,14 @@ vw::RenderPass::RenderPass(vk::Device device, std::vector<vk::Format> attachment
 	renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
 	renderPassCreateInfo.subpassCount = subpassDescriptions.size();
 	renderPassCreateInfo.pSubpasses = subpassDescriptions.data();
-	renderPassCreateInfo.dependencyCount = externalDependencies.size();
-	renderPassCreateInfo.pDependencies = externalDependencies.data();
+	renderPassCreateInfo.dependencyCount = subpassDependencies.size();
+	renderPassCreateInfo.pDependencies = subpassDependencies.data();
 	
 	renderPass = deviceHandle.createRenderPass(renderPassCreateInfo);
 
-	for (size_t i = 0; i < subpassCount; ++i)
-		pipelineSettings[i].setBlendModes(subpasses[i].attachmentBlendModes);
+	std::vector<vw::GraphicsPipelineSettings*> pipelineSettings(subpasses.size());
+	for (size_t i = 0; i < subpasses.size(); ++i)
+		pipelineSettings[i] = subpasses[i].pipelineSettings;
 
 	createPipelines(pipelineSettings);
 }
@@ -153,7 +184,7 @@ vk::Pipeline vw::RenderPass::getSubpassPipeline(uint32_t subpassIndex)
 	return pipelines[subpassIndex];
 }
 
-void vw::RenderPass::createPipelines(std::vector<vw::GraphicsPipelineSettings>& pipelineSettings)
+void vw::RenderPass::createPipelines(std::vector<vw::GraphicsPipelineSettings*>& pipelineSettings)
 {
 	vw::PipelineLayout emptyLayout(deviceHandle, {}, {});
 
@@ -162,15 +193,15 @@ void vw::RenderPass::createPipelines(std::vector<vw::GraphicsPipelineSettings>& 
 
 	for (size_t i = 0; i < pipelineSettings.size(); ++i)
 	{
-		pipelineCreateInfos[i] = pipelineSettings[i];
+		pipelineCreateInfos[i] = pipelineSettings[i]->operator vk::GraphicsPipelineCreateInfo();
 
-		pipelineCreateInfos[i].stageCount = pipelineSettings[i].shaderStages.size();
+		pipelineCreateInfos[i].stageCount = pipelineSettings[i]->shaderStages.size();
 		shaderStageInfos[i].resize(pipelineCreateInfos[i].stageCount);
-		for (size_t j = 0; j < pipelineSettings[i].shaderStages.size(); ++j)
-			shaderStageInfos[i][j] = pipelineSettings[i].shaderStages[j].get().getShaderStageInfo();
+		for (size_t j = 0; j < pipelineSettings[i]->shaderStages.size(); ++j)
+			shaderStageInfos[i][j] = pipelineSettings[i]->shaderStages[j].get().getShaderStageInfo();
 		pipelineCreateInfos[i].pStages = shaderStageInfos[i].data();
 		
-		if (!pipelineSettings[i].pipelineCreateInfo.layout)
+		if (!pipelineSettings[i]->pipelineCreateInfo.layout)
 			pipelineCreateInfos[i].layout = emptyLayout;
 	
 		pipelineCreateInfos[i].renderPass = renderPass;

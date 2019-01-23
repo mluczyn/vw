@@ -32,6 +32,16 @@ vw::Window::operator GLFWwindow*()
 	return windowHandle;
 }
 
+int vw::Window::untilClosed(std::function<void()> loop)
+{
+	while (!shouldClose())
+	{
+		glfwPollEvents();
+		loop();
+	}
+	return 0;
+}
+
 bool vw::Window::shouldClose()
 {
 	return glfwWindowShouldClose(windowHandle);

@@ -16,6 +16,7 @@ namespace vw
 		~Window();
 		vk::SurfaceKHR getSurface();
 		operator GLFWwindow*();
+		int untilClosed(std::function<void()> loop);
 		bool shouldClose();
 	private:
 		GLFWwindow* windowHandle;

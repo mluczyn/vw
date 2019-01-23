@@ -6,24 +6,16 @@
 
 namespace vw
 {
-	enum BlendMode
-	{
-		disabled
-	};
-
-	struct SubpassDescription
-	{
-		std::vector<uint32_t> inputAttachments;
-		std::vector<uint32_t> colorAttachments;
-		std::vector<vw::BlendMode> attachmentBlendModes;
-		std::vector<uint32_t> depthStencilAttachments;
-	};
-
 	static std::map<vk::AccessFlagBits, vk::PipelineStageFlagBits> mapAccessStage =
 	{
 		{vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eColorAttachmentOutput},
 		{vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits::eLateFragmentTests},
 		{vk::AccessFlagBits::eInputAttachmentRead, vk::PipelineStageFlagBits::eFragmentShader}
+	};
+
+	enum BlendMode
+	{
+		disabled
 	};
 
 	static const vk::ColorComponentFlags ColorComponentsRGBA = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
@@ -92,15 +84,37 @@ namespace vw
 		vk::PipelineLayout layout;
 	};
 
+	
+
+	struct ExternalDependency
+	{
+		vk::PipelineStageFlags srcStageMask;
+		vk::PipelineStageFlags dstStageMask;
+		vk::AccessFlags srcAccessMask;
+		vk::AccessFlags dstAccessMask;
+		vk::DependencyFlags flags;
+	};
+
+	struct SubpassDescription
+	{
+		std::vector<uint32_t> inputAttachments;
+		std::vector<uint32_t> colorAttachments;
+		std::vector<uint32_t> depthStencilAttachments;
+		std::vector<vw::BlendMode> attachmentBlendModes;
+		std::vector<vw::ExternalDependency> preDependencies;
+		std::vector<vw::ExternalDependency> postDependencies;
+		vw::GraphicsPipelineSettings* pipelineSettings;
+	};
+
 	class RenderPass
 	{
 	public:
-		RenderPass(vk::Device device, std::vector<vk::Format> attachmentFormats, std::vector<vk::ImageLayout> attachmentOutputLayouts, std::vector<vw::SubpassDescription> subpasses, std::vector<vk::SubpassDependency> externalDependencies, std::vector<vw::GraphicsPipelineSettings> pipelineSettings);
+		RenderPass(vk::Device device, std::vector<vk::Format> attachmentFormats, std::vector<vk::ImageLayout> attachmentOutputLayouts, std::vector<vw::SubpassDescription> subpasses);
 		~RenderPass();
 		operator vk::RenderPass() { return renderPass; };
 		vk::Pipeline getSubpassPipeline(uint32_t subpassIndex);
 	private:
-		void createPipelines(std::vector<vw::GraphicsPipelineSettings>& pipelineSettings);
+		void createPipelines(std::vector<vw::GraphicsPipelineSettings*>& pipelineSettings);
 		vk::RenderPass renderPass; 
 		uint32_t subpassCount;
 		std::vector<vk::Pipeline> pipelines;

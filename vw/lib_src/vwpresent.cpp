@@ -155,6 +155,11 @@ std::vector<vk::ImageView> vw::Swapchain::getImageViews()
 	return swapchainImageViews;
 }
 
+std::vector<vk::Image> vw::Swapchain::getImages()
+{
+	return swapchainImages;
+}
+
 uint32_t vw::Swapchain::getNextImageIndex(vk::Semaphore signaledSemaphore)
 {
 	uint32_t imageIndex;

@@ -57,7 +57,7 @@ namespace vw
 		vk::ImageUsageFlags usageFlags;
 		uint32_t imgWidth = 0, imgHeight = 0;
 		vk::Format imgFormat = vk::Format::eUndefined;
-		vk::ImageLayout currentLayout = vk::ImageLayout::eUndefined;
+		vk::ImageLayout currentLayout;
 		vk::ImageTiling imgTiling = vk::ImageTiling::eOptimal;
 
 		vw::Device& deviceRef;
@@ -72,15 +72,13 @@ namespace vw
 	{
 	public:
 		TransferSrc(vw::Device& device);
-		vw::CommandBuffer copyToImage(vk::Image dstImage, vk::ImageLayout dstLayout, std::vector<vk::ImageCopy>& regions, bool oneTime);
-		void copyToImage(vk::CommandBuffer cmdBuffer, vk::Image dstImage, vk::ImageLayout dstLayout, std::vector<vk::ImageCopy>& regions);
+		void copyToImage(vk::CommandBuffer cmdBuffer, vk::Image dstImage, vk::ImageLayout dstLayout, std::vector<vk::ImageCopy> regions);
 	};
 
 	class TransferDst : public virtual ImageBase
 	{
 	public:
 		TransferDst(vw::Device& device);
-		vw::CommandBuffer copyFromImage(vk::Image srcImage, vk::ImageLayout srcLayout, std::vector<vk::ImageCopy>& regions, bool oneTime);
 	};
 
 	class ColorAttachment : public virtual ImageBase
@@ -93,11 +91,12 @@ namespace vw
 	class Image : public virtual ImageBase, public Uses...
 	{
 	public:
-		Image(vw::Device& device, uint32_t width, uint32_t height, vk::Format format) : ImageBase(device), Uses(device)...
+		Image(vw::Device& device, uint32_t width, uint32_t height, vk::Format format, vk::ImageLayout initialLayout = vk::ImageLayout::eGeneral) : ImageBase(device), Uses(device)...
 		{
 			imgWidth = width;
 			imgHeight = height;
 			imgFormat = format;
+			currentLayout = initialLayout;
 			createImage();
 		}
 	};

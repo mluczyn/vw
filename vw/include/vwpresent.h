@@ -32,6 +32,7 @@ namespace vw
 		vk::Format getImageFormat();
 		vk::Image getImage(uint32_t index);
 		std::vector<vk::ImageView> getImageViews();
+		std::vector<vk::Image> getImages();
 		uint32_t getNextImageIndex(vk::Semaphore signaledSemaphore);
 		~Swapchain();
 	private:

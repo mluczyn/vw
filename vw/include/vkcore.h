@@ -78,8 +78,8 @@ namespace vw
 		Device(vk::Instance instance, vk::PhysicalDevice physicalDevice, bool presentationSupport, bool enableValidation, std::vector<const char*> extensions);
 		vk::PhysicalDevice getPhysicalDevice() { return physicalDeviceHandle; };
 		std::vector<uint32_t> getQueueFamilyIndices(vk::QueueFlags flagMask);
-		vw::CommandBuffer createCommandBuffer(vk::QueueFlags flags, vk::CommandBufferLevel level);
-		vw::CommandBufferSet createCommandBufferSet(uint32_t count, vk::QueueFlags flags, vk::CommandBufferLevel level);
+		vw::CommandBuffer createCommandBuffer(vk::QueueFlags flags, vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary);
+		vw::CommandBufferSet createCommandBufferSet(uint32_t count, vk::QueueFlags flags, vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary);
 		void waitIdle();
 		~Device();
 	private:

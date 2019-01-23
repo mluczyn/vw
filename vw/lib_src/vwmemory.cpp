@@ -82,16 +82,7 @@ vw::TransferSrc::TransferSrc(vw::Device& device) : vw::ImageBase(device)
 	usageFlags |= vk::ImageUsageFlagBits::eTransferSrc;
 }
 
-vw::CommandBuffer vw::TransferSrc::copyToImage(vk::Image dstImage, vk::ImageLayout dstLayout, std::vector<vk::ImageCopy>& regions, bool oneTime)
-{
-	auto cmdBuffer = deviceRef.createCommandBuffer(vk::QueueFlagBits::eTransfer, vk::CommandBufferLevel::ePrimary);
-	cmdBuffer.begin(oneTime ? vk::CommandBufferUsageFlagBits::eOneTimeSubmit : vk::CommandBufferUsageFlagBits::eSimultaneousUse);
-	cmdBuffer.copyImage(*this, currentLayout, dstImage, dstLayout, regions);
-	cmdBuffer.end();
-	return cmdBuffer;
-}
-
-void vw::TransferSrc::copyToImage(vk::CommandBuffer cmdBuffer, vk::Image dstImage, vk::ImageLayout dstLayout, std::vector<vk::ImageCopy>& regions)
+void vw::TransferSrc::copyToImage(vk::CommandBuffer cmdBuffer, vk::Image dstImage, vk::ImageLayout dstLayout, std::vector<vk::ImageCopy> regions)
 {
 	cmdBuffer.copyImage(*this, currentLayout, dstImage, dstLayout, regions);
 }
@@ -100,16 +91,7 @@ vw::TransferDst::TransferDst(vw::Device& device) : vw::ImageBase(device)
 {
 	usageFlags |= vk::ImageUsageFlagBits::eTransferDst;
 }
-
-vw::CommandBuffer vw::TransferDst::copyFromImage(vk::Image srcImage, vk::ImageLayout srcLayout, std::vector<vk::ImageCopy>& regions, bool oneTime)
-{
-	auto cmdBuffer = deviceRef.createCommandBuffer(vk::QueueFlagBits::eTransfer, vk::CommandBufferLevel::ePrimary);
-	cmdBuffer.begin(oneTime ? vk::CommandBufferUsageFlagBits::eOneTimeSubmit : vk::CommandBufferUsageFlagBits::eSimultaneousUse);
-	cmdBuffer.copyImage(srcImage, srcLayout, *this, currentLayout, regions);
-	cmdBuffer.end();
-	return cmdBuffer;
-}
-
+ 
 vw::ImageBase::ImageBase(vw::Device& device) : deviceRef(device)
 {
 }
